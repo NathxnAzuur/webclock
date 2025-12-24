@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clock Screensaver.</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000000;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            cursor: none;
+            transition: background 0.5s ease;
+        }
+
+        body.light-mode {
+            background: #ffffff;
+        }
+
+        body.light-mode .time {
+            color: #000000;
+            text-shadow: 
+                0 0 10px rgba(0, 0, 0, 0.3),
+                0 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        body.light-mode .date {
+            color: #333333;
+            text-shadow: 
+                0 0 5px rgba(51, 51, 51, 0.3);
+        }
+
+        body.light-mode .day {
+            color: #666666;
+            text-shadow: 
+                0 0 5px rgba(102, 102, 102, 0.3);
+        }
+
+        body.light-mode .particle {
+            background: #000000;
+        }
+
+        body.light-mode .controls button {
+            background: rgba(0, 0, 0, 0.1);
+            color: #000000;
+        }
+
+        body.light-mode .controls button:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translate(-50%, -50%) translateY(0);
+            }
+            50% {
+                transform: translate(-50%, -50%) translateY(-20px);
+            }
+        }
+
+        .time {
+            font-size: 120px;
+            font-weight: 800;
+            color: #ffffff;
+            text-shadow: 
+                0 0 10px rgba(255, 255, 255, 0.8),
+                0 0 20px rgba(255, 255, 255, 0.5);
+            letter-spacing: 10px;
+            margin-bottom: 20px;
+            font-variant-numeric: tabular-nums;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .ampm {
+            font-size: 40px;
+            opacity: 0.5;
+            font-weight: 400;
+            margin-left: 15px;
+        }
+
+        .date {
+            font-size: 32px;
+            color: #cccccc;
+            text-shadow: 
+                0 0 5px rgba(204, 204, 204, 0.5);
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+        }
+
+        .day {
+            font-size: 24px;
+            color: #999999;
+            text-shadow: 
+                0 0 5px rgba(153, 153, 153, 0.5);
+            letter-spacing: 3px;
+        }
+
+        .blink {
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% {
+                opacity: 1;
+            }
+            51%, 100% {
+                opacity: 0.3;
+            }
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: #ffffff;
+            border-radius: 50%;
+            opacity: 0;
+            animation: particle-float 8s linear infinite;
+        }
+
+        @keyframes particle-float {
+            0% {
+                opacity: 0;
+                transform: translateY(0) scale(0);
+            }
+            10% {
+                opacity: 0.5;
+            }
+            90% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100vh) scale(1);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .time {
+                font-size: 60px;
+            }
+            .date {
+                font-size: 20px;
+            }
+            .day {
+                font-size: 16px;
+            }
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 10px;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            pointer-events: auto;
+        }
+
+        .controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .controls button {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #ffffff;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .controls button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .controls button:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    
+    <div class="container">
+        <div class="time" id="time">00:00:00</div>
+        <div class="date" id="date">01 JANVIER 2024</div>
+        <div class="day" id="day">LUNDI</div>
+    </div>
+
+    <div class="controls" id="controls">
+        <button id="formatBtn">12H</button>
+        <button id="langBtn">EN</button>
+        <button id="themeBtn">☀️</button>
+    </div>
+
+    <script>
+        let is24Hour = true;
+        let isFrench = true;
+        let isDarkMode = true;
+        let mouseTimeout;
+
+        const controls = document.getElementById('controls');
+        const formatBtn = document.getElementById('formatBtn');
+        const langBtn = document.getElementById('langBtn');
+        const themeBtn = document.getElementById('themeBtn');
+
+        function showControls() {
+            controls.classList.remove('hidden');
+            document.body.style.cursor = 'default';
+            clearTimeout(mouseTimeout);
+            mouseTimeout = setTimeout(() => {
+                controls.classList.add('hidden');
+                document.body.style.cursor = 'none';
+            }, 2500);
+        }
+
+        document.addEventListener('mousemove', showControls);
+
+        formatBtn.addEventListener('click', () => {
+            is24Hour = !is24Hour;
+            formatBtn.textContent = is24Hour ? '12H' : '24H';
+            updateClock();
+        });
+
+        langBtn.addEventListener('click', () => {
+            isFrench = !isFrench;
+            langBtn.textContent = isFrench ? 'EN' : 'FR';
+            updateClock();
+        });
+
+        themeBtn.addEventListener('click', () => {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('light-mode');
+            themeBtn.textContent = isDarkMode ? '☀️' : '🌙';
+        });
+
+        function updateClock() {
+            const now = new Date();
+            
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            
+            if (!is24Hour) {
+                const ampm = hours >= 12 ? ' PM' : ' AM';
+                hours = hours % 12 || 12;
+                document.getElementById('time').innerHTML = 
+                    `${String(hours).padStart(2, '0')}<span class="blink">:</span>${minutes}<span class="blink">:</span>${seconds}<span class="ampm">${ampm}</span>`;
+            } else {
+                document.getElementById('time').innerHTML = 
+                    `${String(hours).padStart(2, '0')}<span class="blink">:</span>${minutes}<span class="blink">:</span>${seconds}`;
+            }
+            
+            const daysFr = ['DIMANCHE', 'LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI'];
+            const daysEn = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+            const monthsFr = ['JANVIER', 'FÉVRIER', 'MARS', 'AVRIL', 'MAI', 'JUIN', 
+                          'JUILLET', 'AOÛT', 'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DÉCEMBRE'];
+            const monthsEn = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+                          'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+            
+            const days = isFrench ? daysFr : daysEn;
+            const months = isFrench ? monthsFr : monthsEn;
+            
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = months[now.getMonth()];
+            const year = now.getFullYear();
+            const dayName = days[now.getDay()];
+            
+            if (isFrench) {
+                document.getElementById('date').textContent = `${day} ${month} ${year}`;
+            } else {
+                document.getElementById('date').textContent = `${month} ${day}, ${year}`;
+            }
+            document.getElementById('day').textContent = dayName;
+        }
+
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            
+            const size = Math.random() * 3 + 1;
+            particle.style.width = size + 'px';
+            particle.style.height = size + 'px';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
+            particle.style.animationDelay = Math.random() * 4 + 's';
+            
+            document.getElementById('particles').appendChild(particle);
+            
+            setTimeout(() => particle.remove(), 12000);
+        }
+
+        updateClock();
+        setInterval(updateClock, 1000);
+        
+        setInterval(createParticle, 300);
+        for (let i = 0; i < 20; i++) {
+            setTimeout(createParticle, Math.random() * 2000);
+        }
+    </script>
+</body>
+</html>
