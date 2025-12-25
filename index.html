@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clock Screensaver.</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         * {
@@ -159,15 +160,159 @@
             }
         }
 
+        .analog-clock {
+            width: 300px;
+            height: 300px;
+            position: relative;
+            margin: 0 auto 40px;
+        }
+
+        .clock-face {
+            width: 100%;
+            height: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 
+                0 0 20px rgba(255, 255, 255, 0.2),
+                inset 0 0 20px rgba(255, 255, 255, 0.05);
+        }
+
+        body.light-mode .clock-face {
+            border-color: rgba(0, 0, 0, 0.2);
+            box-shadow: 
+                0 0 20px rgba(0, 0, 0, 0.1),
+                inset 0 0 20px rgba(0, 0, 0, 0.03);
+        }
+
+        .analog-clock .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            background: #ffffff;
+            border-radius: 10px;
+        }
+
+        body.light-mode .analog-clock .hand {
+            background: #000000;
+        }
+
+        .analog-clock .hour-hand {
+            width: 6px;
+            height: 80px;
+            margin-left: -3px;
+        }
+
+        .analog-clock .minute-hand {
+            width: 4px;
+            height: 110px;
+            margin-left: -2px;
+        }
+
+        .analog-clock .second-hand {
+            width: 2px;
+            height: 120px;
+            margin-left: -1px;
+            background: #ff4444;
+        }
+
+        body.light-mode .analog-clock .second-hand {
+            background: #ff4444;
+        }
+
+        .analog-clock .center-dot {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #ffffff;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        body.light-mode .analog-clock .center-dot {
+            background: #000000;
+        }
+
+        .analog-clock .hour-marker {
+            position: absolute;
+            width: 3px;
+            height: 18px;
+            background: #ffffff;
+            left: 50%;
+            top: 0;
+            margin-left: -1.5px;
+            margin-top: 8px;
+            transform-origin: 1.5px calc(150px - 8px);
+        }
+
+        body.light-mode .analog-clock .hour-marker {
+            background: #000000;
+        }
+
+        .clock-display {
+            display: none;
+        }
+
+        .clock-display.active {
+            display: block;
+        }
+
         @media (max-width: 768px) {
             .time {
                 font-size: 60px;
+                letter-spacing: 5px;
             }
             .date {
-                font-size: 20px;
+                font-size: 18px;
+                letter-spacing: 2px;
             }
             .day {
-                font-size: 16px;
+                font-size: 14px;
+                letter-spacing: 2px;
+            }
+            .ampm {
+                font-size: 24px;
+                margin-left: 8px;
+            }
+            .analog-clock {
+                width: 220px;
+                height: 220px;
+                margin-bottom: 30px;
+            }
+            .analog-clock .hour-hand {
+                width: 5px;
+                height: 60px;
+                margin-left: -2.5px;
+            }
+            .analog-clock .minute-hand {
+                width: 3px;
+                height: 80px;
+                margin-left: -1.5px;
+            }
+            .analog-clock .second-hand {
+                width: 2px;
+                height: 90px;
+                margin-left: -1px;
+            }
+            .analog-clock .hour-marker {
+                height: 14px;
+                margin-top: 6px;
+                transform-origin: 1.5px calc(110px - 6px);
+            }
+            .controls {
+                bottom: 15px;
+                right: 15px;
+                gap: 6px;
+                flex-wrap: wrap;
+                max-width: calc(100vw - 30px);
+            }
+            .controls button {
+                padding: 8px 12px;
+                font-size: 11px;
             }
         }
 
@@ -215,12 +360,26 @@
     <div class="particles" id="particles"></div>
     
     <div class="container">
-        <div class="time" id="time">00:00:00</div>
-        <div class="date" id="date">01 JANVIER 2024</div>
-        <div class="day" id="day">LUNDI</div>
+        <div class="clock-display active" id="analogClock">
+            <div class="analog-clock">
+                <div class="clock-face">
+                    <div class="hour-hand hand" id="hourHand"></div>
+                    <div class="minute-hand hand" id="minuteHand"></div>
+                    <div class="second-hand hand" id="secondHand"></div>
+                    <div class="center-dot"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="clock-display active" id="digitalClock">
+            <div class="time" id="time">00:00:00</div>
+            <div class="date" id="date">01 JANVIER 2024</div>
+            <div class="day" id="day">LUNDI</div>
+        </div>
     </div>
 
     <div class="controls" id="controls">
+        <button id="clockTypeBtn">⏱️</button>
         <button id="formatBtn">12H</button>
         <button id="langBtn">EN</button>
         <button id="themeBtn">☀️</button>
@@ -230,12 +389,25 @@
         let is24Hour = true;
         let isFrench = true;
         let isDarkMode = true;
+        let clockType = 'both'; // 'analog', 'digital', 'both'
         let mouseTimeout;
 
         const controls = document.getElementById('controls');
         const formatBtn = document.getElementById('formatBtn');
         const langBtn = document.getElementById('langBtn');
         const themeBtn = document.getElementById('themeBtn');
+        const clockTypeBtn = document.getElementById('clockTypeBtn');
+        const analogClock = document.getElementById('analogClock');
+        const digitalClock = document.getElementById('digitalClock');
+
+        // Créer les marqueurs d'heures
+        const clockFace = document.querySelector('.clock-face');
+        for (let i = 0; i < 12; i++) {
+            const marker = document.createElement('div');
+            marker.className = 'hour-marker';
+            marker.style.transform = `rotate(${i * 30}deg)`;
+            clockFace.appendChild(marker);
+        }
 
         function showControls() {
             controls.classList.remove('hidden');
@@ -266,6 +438,40 @@
             document.body.classList.toggle('light-mode');
             themeBtn.textContent = isDarkMode ? '☀️' : '🌙';
         });
+
+        clockTypeBtn.addEventListener('click', () => {
+            if (clockType === 'both') {
+                clockType = 'digital';
+                clockTypeBtn.textContent = '🕐';
+                analogClock.classList.remove('active');
+                digitalClock.classList.add('active');
+            } else if (clockType === 'digital') {
+                clockType = 'analog';
+                clockTypeBtn.textContent = '🔢';
+                analogClock.classList.add('active');
+                digitalClock.classList.remove('active');
+            } else {
+                clockType = 'both';
+                clockTypeBtn.textContent = '⏱️';
+                analogClock.classList.add('active');
+                digitalClock.classList.add('active');
+            }
+        });
+
+        function updateAnalogClock() {
+            const now = new Date();
+            const hours = now.getHours() % 12;
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+
+            const hourDeg = (hours * 30) + (minutes * 0.5);
+            const minuteDeg = minutes * 6;
+            const secondDeg = seconds * 6;
+
+            document.getElementById('hourHand').style.transform = `rotate(${hourDeg}deg)`;
+            document.getElementById('minuteHand').style.transform = `rotate(${minuteDeg}deg)`;
+            document.getElementById('secondHand').style.transform = `rotate(${secondDeg}deg)`;
+        }
 
         function updateClock() {
             const now = new Date();
@@ -324,7 +530,11 @@
         }
 
         updateClock();
-        setInterval(updateClock, 1000);
+        updateAnalogClock();
+        setInterval(() => {
+            updateClock();
+            updateAnalogClock();
+        }, 1000);
         
         setInterval(createParticle, 300);
         for (let i = 0; i < 20; i++) {
